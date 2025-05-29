@@ -1,10 +1,11 @@
 package com.example.TournamentSetup.models;
 
+import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import jakarta.persistence.*;
+
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -12,11 +13,26 @@ public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String name; // 🔹 Add this field
+
+    @Column(nullable = false, unique = true)
     private String username;
+
+    @Column(nullable = false)
     private String password;
-    private String email;
-    private String role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
+
+    // Constructor for JPA (sth related to database)
+    public User() {
+    }
+
+    public User(String username, String password, Role role) {
+        this.username = username;
+        this.password = password;
+        this.role = role;
+    }
 
     // Getters & Setters
     public Long getId() {
@@ -25,14 +41,6 @@ public class User implements UserDetails {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     @Override
@@ -53,26 +61,17 @@ public class User implements UserDetails {
         this.password = password;
     }
 
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getRole() {
+    public Role getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(Role role) {
         this.role = role;
     }
 
-    // Required methods for UserDetails
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.emptyList(); // No roles assigned
+        return List.of(() -> "ROLE_" + role.name());
     }
 
     @Override

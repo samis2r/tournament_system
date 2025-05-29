@@ -17,13 +17,13 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     private UserRepository userRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Optional<User> userOptional = userRepository.findByEmail(email);
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        Optional<User> userOptional = userRepository.findByUsername(username);
 
         if (userOptional.isEmpty()) {
-            throw new UsernameNotFoundException("User not found with email: " + email);
+            throw new UsernameNotFoundException("User not found with username: " + username);
         }
 
-        return userOptional.get(); // ✅ Ensures that user is correctly fetched
+        return userOptional.get();
     }
 }

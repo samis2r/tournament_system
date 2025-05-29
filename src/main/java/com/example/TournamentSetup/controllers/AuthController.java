@@ -12,14 +12,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 public class AuthController {
     private final AuthenticationManager authenticationManager;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository,
-            PasswordEncoder passwordEncoder) {
+    public AuthController(AuthenticationManager authenticationManager) {
         this.authenticationManager = authenticationManager;
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping("/login")
@@ -31,15 +26,5 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(401).body("Invalid credentials");
         }
-    }
-
-    @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody User user) {
-        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
-            return ResponseEntity.badRequest().body("User already exists");
-        }
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userRepository.save(user);
-        return ResponseEntity.ok("User registered successfully");
     }
 }
