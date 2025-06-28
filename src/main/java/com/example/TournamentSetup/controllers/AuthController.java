@@ -4,7 +4,7 @@ import com.example.TournamentSetup.models.User;
 import com.example.TournamentSetup.repositories.UserRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -15,37 +15,54 @@ import java.util.Optional;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository) {
-        this.authenticationManager = authenticationManager;
+    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody User user) {
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword()));
 
-            // look for the user in DB
-            Optional<User> optionalUser = userRepository.findByUsername(user.getUsername());
-            if (optionalUser.isEmpty()) {
-                return ResponseEntity.status(404).body("User not found");
-            }
+        // look for the user in DB
+        Optional<User> optionalUser = userRepository.findByUsername(user.getUsername());
+        if (optionalUser.isEmpty()) {
+            return ResponseEntity.status(404).body("User not found");
+        }
 
-            User foundUser = optionalUser.get();
+        User foundUser = optionalUser.get();
 
-            // JSON response
-            Map<String, Object> response = new HashMap<>();
-            response.put("username", foundUser.getUsername());
-            response.put("role", foundUser.getRole());
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
+        // Check if password is encrypted
+        if (!passwordEncoder.matches(user.getPassword(), foundUser.getPassword())) {
             return ResponseEntity.status(401).body("Invalid credentials");
         }
+
+        // Prepare JSON response
+        Map<String, Object> response = new HashMap<>();
+        response.put("username", foundUser.getUsername());
+        response.put("role", foundUser.getRole());
+
+        return ResponseEntity.ok(response);
+
     }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody User user) {
+        // check if username already exists
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            return ResponseEntity.badRequest().body("Username already exists");
+        }
+
+        // Encrypt password before saving
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        // save user in DB
+        User saved = userRepository.save(user);
+
+        // return response with user data
+        return ResponseEntity.ok(saved);
+    }
+
 }
